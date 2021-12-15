@@ -1,0 +1,9 @@
+Name: monolith-api
+Host: 0.0.0.0
+Port: 8888
+Auth:
+  AccessSecret: 5bffec4d-3bd7-47f7-b8a4-c11b2ed164d0
+  AccessExpire: 3600
+CacheRedis:
+  - Host: localhost
+    Type: node
