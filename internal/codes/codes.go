@@ -10,7 +10,7 @@ type CodeErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func NewCodeError(status int, msg string) error {
+func NewCodeError(status int, msg string) *CodeError {
 	return &CodeError{Code: status, Msg: msg}
 }
 

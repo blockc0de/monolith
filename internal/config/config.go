@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/tal-tech/go-zero/core/stores/cache"
+	"github.com/tal-tech/go-zero/core/stores/redis"
 	"github.com/tal-tech/go-zero/rest"
 )
 
@@ -12,6 +12,6 @@ type Auth struct {
 
 type Config struct {
 	rest.RestConf
-	Auth       Auth
-	CacheRedis cache.CacheConf
+	Auth      Auth
+	RedisConf redis.RedisConf
 }

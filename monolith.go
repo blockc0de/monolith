@@ -33,7 +33,8 @@ func main() {
 		case *codes.CodeError:
 			return e.Code, e.Data()
 		default:
-			return http.StatusInternalServerError, nil
+			ex := codes.NewCodeError(http.StatusBadRequest, e.Error()).Data()
+			return http.StatusBadRequest, ex
 		}
 	})
 

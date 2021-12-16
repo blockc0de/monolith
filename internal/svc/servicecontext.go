@@ -2,14 +2,25 @@ package svc
 
 import (
 	"github.com/blockc0de/monolith/internal/config"
+	"github.com/tal-tech/go-zero/core/stores/redis"
 )
 
 type ServiceContext struct {
-	Config config.Config
+	Config      config.Config
+	RedisClient *redis.Redis
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
+	options := []redis.Option{
+		redis.WithPass(c.RedisConf.Pass),
+	}
+	if c.RedisConf.Type == redis.ClusterType {
+		options = append(options, redis.Cluster())
+	}
+	redisClient := redis.New(c.RedisConf.Host, options...)
+
 	return &ServiceContext{
-		Config: c,
+		Config:      c,
+		RedisClient: redisClient,
 	}
 }
