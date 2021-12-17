@@ -2,6 +2,11 @@ package logic
 
 import (
 	"context"
+	"net/http"
+
+	"github.com/blockc0de/monolith/internal/codes"
+
+	"github.com/blockc0de/monolith/internal/storage"
 
 	"github.com/blockc0de/monolith/internal/svc"
 	"github.com/blockc0de/monolith/internal/types"
@@ -24,7 +29,11 @@ func NewLogsLogic(ctx context.Context, svcCtx *svc.ServiceContext) LogsLogic {
 }
 
 func (l *LogsLogic) Logs(req types.LogsRequest) (resp *types.LogsResponse, err error) {
-	// todo: add your logic here and delete this line
+	graphs := storage.GraphsManager{RedisClient: l.svcCtx.RedisClient}
+	logs, err := graphs.GetLogs(req.Hash)
+	if err != nil {
+		return nil, codes.NewCodeError(http.StatusInternalServerError, "internal server error")
+	}
 
-	return
+	return &types.LogsResponse{Logs: logs}, nil
 }

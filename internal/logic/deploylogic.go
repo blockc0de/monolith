@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/blockc0de/engine/interop"
+
 	"github.com/blockc0de/engine/compress"
 	"github.com/blockc0de/monolith/internal/codes"
 	"github.com/blockc0de/monolith/internal/storage"
@@ -35,6 +37,11 @@ func (l *DeployLogic) Deploy(req types.DeployRequest) (resp *types.DeployRespons
 		return nil, codes.NewCodeError(http.StatusBadRequest, "invalid graph")
 	}
 
+	graph, err := interop.LoadGraph(data)
+	if err != nil {
+		return nil, codes.NewCodeError(http.StatusBadRequest, "invalid graph")
+	}
+
 	projectId := gjson.Get(string(data), "project_id").String()
 	address := common.HexToAddress(l.ctx.Value("address").(string))
 	hash := utils.GetUniqueGraphHash(address, projectId)
@@ -43,11 +50,16 @@ func (l *DeployLogic) Deploy(req types.DeployRequest) (resp *types.DeployRespons
 	if err = graphs.Save(hash, req.Bytes); err != nil {
 		return nil, codes.NewCodeError(http.StatusInternalServerError, "internal server error")
 	}
+	graphs.ClearLogs(hash)
 
 	wallets := storage.WalletsManager{RedisClient: l.svcCtx.RedisClient}
 	if err = wallets.AddGraph(address.String(), hash); err != nil {
 		return nil, codes.NewCodeError(http.StatusInternalServerError, "internal server error")
 	}
+
+	graph.Hash = hash
+	l.svcCtx.GraphContainer.AddNewGraph(hash, graph)
+	logx.Infof("Graph deployed, wallet: %s, hash: %s", address.String(), hash)
 
 	return &types.DeployResponse{Hash: hash}, nil
 }

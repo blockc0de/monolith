@@ -10,6 +10,7 @@ import (
 	"github.com/blockc0de/monolith/internal/handler"
 	"github.com/blockc0de/monolith/internal/svc"
 	"github.com/tal-tech/go-zero/core/conf"
+	"github.com/tal-tech/go-zero/core/logx"
 	"github.com/tal-tech/go-zero/rest"
 	"github.com/tal-tech/go-zero/rest/httpx"
 )
@@ -22,6 +23,8 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 
+	logx.MustSetup(c.Log)
+
 	ctx := svc.NewServiceContext(c)
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
@@ -33,8 +36,8 @@ func main() {
 		case *codes.CodeError:
 			return e.Code, e.Data()
 		default:
-			ex := codes.NewCodeError(http.StatusBadRequest, e.Error()).Data()
-			return http.StatusBadRequest, ex
+			ex := codes.NewCodeError(http.StatusInternalServerError, e.Error()).Data()
+			return http.StatusInternalServerError, ex
 		}
 	})
 
