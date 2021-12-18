@@ -30,7 +30,6 @@ require (
     github.com/prometheus/client_model v0.2.0 // indirect
     github.com/prometheus/common v0.26.0 // indirect
     github.com/prometheus/procfs v0.6.0 // indirect
-    github.com/rs/cors v1.8.0 // indirect
     github.com/shopspring/decimal v1.3.1 // indirect
     github.com/spaolacci/murmur3 v1.1.0 // indirect
     github.com/tidwall/match v1.1.1 // indirect
