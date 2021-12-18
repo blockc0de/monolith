@@ -26,7 +26,9 @@ func main() {
 	logx.MustSetup(c.Log)
 
 	ctx := svc.NewServiceContext(c)
-	server := rest.MustNewServer(c.RestConf)
+	server := rest.MustNewServer(c.RestConf, rest.WithCustomCors(func(header http.Header) {
+		header.Set("Access-Control-Allow-Headers", "Content-Type, Origin, Authorization, Secret-Key")
+	}, nil))
 	defer server.Stop()
 
 	handler.RegisterHandlers(server, ctx)

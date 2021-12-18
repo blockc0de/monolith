@@ -13,7 +13,7 @@ import (
 // "graph::{hash}" => map
 //     "data" => string
 //     "state" => string
-// "graph::{hash}::logs" => list
+// "graph::logs::{hash}" => list
 
 type GraphsManager struct {
 	RedisClient *redis.Redis
@@ -24,7 +24,7 @@ func (m *GraphsManager) graphKey(hash string) string {
 }
 
 func (m *GraphsManager) graphLogsKey(hash string) string {
-	return fmt.Sprintf("graph::{%s}::logs", hash)
+	return fmt.Sprintf("graph::logs::{%s}", hash)
 }
 
 func (m *GraphsManager) Get(hash string) (string, error) {
