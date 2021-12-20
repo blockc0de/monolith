@@ -31,7 +31,10 @@ func NewCompressLogic(ctx context.Context, svcCtx *svc.ServiceContext) CompressL
 }
 
 func (l *CompressLogic) Compress(req types.CompressRequest) (resp *types.CompressResponse, err error) {
-	compressed := compress.GraphCompression{}.CompressGraphData([]byte(req.Data))
+	compressed, err := compress.GraphCompression{}.CompressGraphData([]byte(req.Data))
+	if err != nil {
+		return nil, codes.NewCodeError(http.StatusBadRequest, "invalid graph")
+	}
 
 	_, err = interop.LoadGraph([]byte(req.Data))
 	if err != nil {
