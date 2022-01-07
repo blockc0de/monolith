@@ -9,6 +9,8 @@ import (
 
 	"github.com/blockc0de/engine"
 	"github.com/blockc0de/engine/block"
+	"github.com/blockc0de/engine/compress"
+	"github.com/blockc0de/engine/interop"
 	"github.com/blockc0de/monolith/internal/storage"
 	"github.com/blockc0de/monolith/internal/types"
 	"github.com/tal-tech/go-zero/core/logx"
@@ -21,14 +23,10 @@ type Graph struct {
 }
 
 type Container struct {
-	running     bool
-	redisClient *redis.Redis
-
-	mutex  sync.Mutex
-	graphs map[string]*engine.Engine
-
-	pendingQueue chan Graph
-
+	redisClient        *redis.Redis
+	mutex              sync.Mutex
+	graphs             map[string]*engine.Engine
+	pendingQueue       chan Graph
 	restartingSet      map[string]*block.Graph
 	restartingSetMutex sync.Mutex
 }
@@ -42,6 +40,57 @@ func NewContainer(redisClient *redis.Redis) *Container {
 	}
 	go c.polling()
 	return &c
+}
+
+func (c *Container) LoadGraphs() (int, error) {
+	graphsManager := storage.GraphsManager{
+		RedisClient: c.redisClient,
+	}
+
+	var cursor uint64
+	var graphs []*block.Graph
+	for {
+		slice, curr, err := graphsManager.Scan(cursor, 1)
+		if err != nil {
+			return 0, err
+		}
+
+		for _, graph := range slice {
+			n, err := strconv.Atoi(graph.State)
+			if err != nil {
+				continue
+			}
+
+			state := GraphStateEnum(n)
+			if state != GraphStateEnumStarting && state != GraphStateEnumStarted && state != GraphStateEnumRestarting {
+				continue
+			}
+
+			data, err := compress.GraphCompression{}.DecompressGraphData(graph.Data)
+			if err != nil {
+				return 0, err
+			}
+
+			instance, err := interop.LoadGraph(data)
+			if err != nil {
+				return 0, err
+			}
+
+			instance.Hash = graph.Hash
+			graphs = append(graphs, instance)
+		}
+
+		if curr == 0 {
+			break
+		}
+		cursor = curr
+	}
+
+	for _, graph := range graphs {
+		c.AddNewGraph(graph.Hash, graph)
+	}
+
+	return len(graphs), nil
 }
 
 func (c *Container) AddNewGraph(hash string, graph *block.Graph) {
@@ -75,14 +124,8 @@ func (c *Container) StopGraphByHash(hash string) {
 }
 
 func (c *Container) polling() {
-	for {
-		select {
-		case graph, ok := <-c.pendingQueue:
-			if !ok {
-				return
-			}
-			go c.runEngine(graph.Hash, graph.Graph)
-		}
+	for graph := range c.pendingQueue {
+		go c.runEngine(graph.Hash, graph.Graph)
 	}
 }
 
@@ -118,7 +161,11 @@ func (c *Container) runEngine(hash string, graph *block.Graph) {
 	delete(c.graphs, hash)
 	c.mutex.Unlock()
 
-	c.updateGraphState(hash, GraphStateEnumStopped)
+	if err != nil {
+		c.updateGraphState(hash, GraphStateEnumError)
+	} else {
+		c.updateGraphState(hash, GraphStateEnumStopped)
+	}
 
 	// Restart graph if necessary
 	c.restartingSetMutex.Lock()
@@ -137,7 +184,7 @@ func (c *Container) runEngine(hash string, graph *block.Graph) {
 }
 
 func (c *Container) appendLog(hash string, msgType string, message string) {
-	graphs := storage.GraphsManager{
+	graphsManager := storage.GraphsManager{
 		RedisClient: c.redisClient,
 	}
 
@@ -146,18 +193,18 @@ func (c *Container) appendLog(hash string, msgType string, message string) {
 		Message:   message,
 		Timestamp: time.Now().UnixMilli(),
 	}
-	err := graphs.AppendLog(hash, log)
+	err := graphsManager.AppendLog(hash, log)
 	if err != nil {
 		logx.Errorf("Failed to append log, reason: %s", err.Error())
 	}
 }
 
 func (c *Container) updateGraphState(hash string, state GraphStateEnum) {
-	graphs := storage.GraphsManager{
+	graphsManager := storage.GraphsManager{
 		RedisClient: c.redisClient,
 	}
 
-	err := graphs.SetState(hash, strconv.Itoa(int(state)))
+	err := graphsManager.SetState(hash, strconv.Itoa(int(state)))
 	if err != nil {
 		logx.Errorf("Failed to update graph state, reason: %s", err.Error())
 	}

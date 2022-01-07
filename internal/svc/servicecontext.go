@@ -3,6 +3,7 @@ package svc
 import (
 	"github.com/blockc0de/monolith/internal/config"
 	"github.com/blockc0de/monolith/internal/graphs"
+	"github.com/tal-tech/go-zero/core/logx"
 	"github.com/tal-tech/go-zero/core/stores/redis"
 )
 
@@ -21,9 +22,17 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 	redisClient := redis.New(c.RedisConf.Host, options...)
 
+	container := graphs.NewContainer(redisClient)
+	count, err := container.LoadGraphs()
+	if err != nil {
+		logx.Errorf("Failed to load active graphs, reason: %s", err.Error())
+	} else {
+		logx.Infof("Load active graphs from storage done, count: %d", count)
+	}
+
 	return &ServiceContext{
 		Config:         c,
 		RedisClient:    redisClient,
-		GraphContainer: graphs.NewContainer(redisClient),
+		GraphContainer: container,
 	}
 }

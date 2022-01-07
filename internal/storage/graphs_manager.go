@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/tal-tech/go-zero/core/stores/redis"
 
@@ -14,6 +15,12 @@ import (
 //     "data" => string
 //     "state" => string
 // "graph::logs::{hash}" => list
+
+type Graph struct {
+	Hash  string
+	Data  string
+	State string
+}
 
 type GraphsManager struct {
 	RedisClient *redis.Redis
@@ -41,6 +48,36 @@ func (m *GraphsManager) GetState(hash string) (string, error) {
 
 func (m *GraphsManager) SetState(hash, state string) error {
 	return m.RedisClient.Hset(m.graphKey(hash), "state", state)
+}
+
+func (m *GraphsManager) Scan(cursor uint64, count int64) ([]Graph, uint64, error) {
+	keys, cur, err := m.RedisClient.Scan(cursor, "graph::{*", count)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]Graph, 0, len(keys))
+	for _, key := range keys {
+		hash := strings.SplitN(strings.SplitN(key, "{", 2)[1], "}", 2)[0]
+
+		data, err := m.Get(hash)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		state, err := m.GetState(hash)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		result = append(result, Graph{
+			Hash:  hash,
+			Data:  data,
+			State: state,
+		})
+	}
+
+	return result, cur, nil
 }
 
 func (m *GraphsManager) GetLogs(hash string) ([]types.Log, error) {
