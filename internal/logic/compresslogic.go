@@ -12,8 +12,8 @@ import (
 	"github.com/blockc0de/monolith/internal/svc"
 	"github.com/blockc0de/monolith/internal/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tal-tech/go-zero/core/logx"
 	"github.com/tidwall/gjson"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type CompressLogic struct {

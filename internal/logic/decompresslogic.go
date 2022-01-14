@@ -14,7 +14,7 @@ import (
 	"github.com/blockc0de/monolith/internal/svc"
 	"github.com/blockc0de/monolith/internal/types"
 
-	"github.com/tal-tech/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type DecompressLogic struct {

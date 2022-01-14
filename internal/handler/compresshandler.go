@@ -6,7 +6,7 @@ import (
 	"github.com/blockc0de/monolith/internal/logic"
 	"github.com/blockc0de/monolith/internal/svc"
 	"github.com/blockc0de/monolith/internal/types"
-	"github.com/tal-tech/go-zero/rest/httpx"
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func CompressHandler(ctx *svc.ServiceContext) http.HandlerFunc {

@@ -13,17 +13,21 @@ import (
 	"github.com/blockc0de/engine/interop"
 	"github.com/blockc0de/monolith/internal/storage"
 	"github.com/blockc0de/monolith/internal/types"
-	"github.com/tal-tech/go-zero/core/logx"
-	"github.com/tal-tech/go-zero/core/stores/redis"
+	"github.com/ethereum/go-ethereum/common"
+	red "github.com/go-redis/redis"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 type Graph struct {
 	Hash  string
 	Graph *block.Graph
+	Owner common.Address
 }
 
 type Container struct {
-	redisClient        *redis.Redis
+	redis              *redis.Redis
+	redisConn          red.Cmdable
 	mutex              sync.Mutex
 	graphs             map[string]*engine.Engine
 	pendingQueue       chan Graph
@@ -33,9 +37,10 @@ type Container struct {
 
 func NewContainer(redisClient *redis.Redis) *Container {
 	c := Container{
+		redis:         redisClient,
+		redisConn:     newRedisClient(redisClient.Addr, redisClient.Pass, redisClient.Type, false),
 		graphs:        make(map[string]*engine.Engine),
 		restartingSet: make(map[string]*block.Graph),
-		redisClient:   redisClient,
 		pendingQueue:  make(chan Graph, 1024),
 	}
 	go c.polling()
@@ -43,12 +48,11 @@ func NewContainer(redisClient *redis.Redis) *Container {
 }
 
 func (c *Container) LoadGraphs() (int, error) {
-	graphsManager := storage.GraphsManager{
-		RedisClient: c.redisClient,
-	}
-
 	var cursor uint64
 	var graphs []*block.Graph
+	ownerTable := make(map[string]common.Address)
+	graphsManager := storage.GraphsManager{RedisClient: c.redis}
+
 	for {
 		slice, curr, err := graphsManager.Scan(cursor, 1)
 		if err != nil {
@@ -62,7 +66,9 @@ func (c *Container) LoadGraphs() (int, error) {
 			}
 
 			state := GraphStateEnum(n)
-			if state != GraphStateEnumStarting && state != GraphStateEnumStarted && state != GraphStateEnumRestarting {
+			if state != GraphStateEnumStarting &&
+				state != GraphStateEnumStarted &&
+				state != GraphStateEnumRestarting {
 				continue
 			}
 
@@ -78,6 +84,7 @@ func (c *Container) LoadGraphs() (int, error) {
 
 			instance.Hash = graph.Hash
 			graphs = append(graphs, instance)
+			ownerTable[instance.Hash] = common.HexToAddress(graph.Owner)
 		}
 
 		if curr == 0 {
@@ -87,20 +94,21 @@ func (c *Container) LoadGraphs() (int, error) {
 	}
 
 	for _, graph := range graphs {
-		c.AddNewGraph(graph.Hash, graph)
+		owner := ownerTable[graph.Hash]
+		c.AddNewGraph(owner, graph.Hash, graph)
 	}
 
 	return len(graphs), nil
 }
 
-func (c *Container) AddNewGraph(hash string, graph *block.Graph) {
+func (c *Container) AddNewGraph(owner common.Address, hash string, graph *block.Graph) {
 	c.mutex.Lock()
 	engine, ok := c.graphs[hash]
 	c.mutex.Unlock()
 
 	if !ok {
 		c.updateGraphState(hash, GraphStateEnumStarting)
-		c.pendingQueue <- Graph{Hash: hash, Graph: graph}
+		c.pendingQueue <- Graph{Owner: owner, Hash: hash, Graph: graph}
 		return
 	}
 
@@ -125,17 +133,18 @@ func (c *Container) StopGraphByHash(hash string) {
 
 func (c *Container) polling() {
 	for graph := range c.pendingQueue {
-		go c.runEngine(graph.Hash, graph.Graph)
+		go c.runEngine(graph.Owner, graph.Hash, graph.Graph)
 	}
 }
 
-func (c *Container) runEngine(hash string, graph *block.Graph) {
+func (c *Container) runEngine(owner common.Address, hash string, graph *block.Graph) {
 	ev := engine.Event{
 		AppendLog: func(msgType string, message string) {
 			c.appendLog(hash, msgType, message)
 		},
 	}
-	engine := engine.NewEngine(graph, ev)
+
+	engine := engine.NewEngine(graph, owner, c.redisConn, ev)
 	c.updateGraphState(hash, GraphStateEnumStarted)
 
 	c.mutex.Lock()
@@ -179,20 +188,17 @@ func (c *Container) runEngine(hash string, graph *block.Graph) {
 		engine.AppendLog("warn",
 			fmt.Sprintf("Graph hash %s stopped successfully, restarting...", hash))
 		logx.Infof("Graph hash %s stopped successfully, restarting...", hash)
-		c.pendingQueue <- Graph{Hash: hash, Graph: graph}
+		c.pendingQueue <- Graph{Owner: owner, Hash: hash, Graph: graph}
 	}
 }
 
 func (c *Container) appendLog(hash string, msgType string, message string) {
-	graphsManager := storage.GraphsManager{
-		RedisClient: c.redisClient,
-	}
-
 	log := types.Log{
 		Type:      msgType,
 		Message:   message,
 		Timestamp: time.Now().UnixMilli(),
 	}
+	graphsManager := storage.GraphsManager{RedisClient: c.redis}
 	err := graphsManager.AppendLog(hash, log)
 	if err != nil {
 		logx.Errorf("Failed to append log, reason: %s", err.Error())
@@ -200,10 +206,7 @@ func (c *Container) appendLog(hash string, msgType string, message string) {
 }
 
 func (c *Container) updateGraphState(hash string, state GraphStateEnum) {
-	graphsManager := storage.GraphsManager{
-		RedisClient: c.redisClient,
-	}
-
+	graphsManager := storage.GraphsManager{RedisClient: c.redis}
 	err := graphsManager.SetState(hash, strconv.Itoa(int(state)))
 	if err != nil {
 		logx.Errorf("Failed to update graph state, reason: %s", err.Error())

@@ -9,10 +9,10 @@ import (
 	"github.com/blockc0de/monolith/internal/config"
 	"github.com/blockc0de/monolith/internal/handler"
 	"github.com/blockc0de/monolith/internal/svc"
-	"github.com/tal-tech/go-zero/core/conf"
-	"github.com/tal-tech/go-zero/core/logx"
-	"github.com/tal-tech/go-zero/rest"
-	"github.com/tal-tech/go-zero/rest/httpx"
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 var configFile = flag.String("f", "etc/monolith-api.yaml", "the config file")

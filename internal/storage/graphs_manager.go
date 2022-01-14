@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tal-tech/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 
 	"github.com/blockc0de/monolith/internal/types"
 )
@@ -14,12 +14,14 @@ import (
 // "graph::{hash}" => map
 //     "data" => string
 //     "state" => string
+//     "owner" => string
 // "graph::logs::{hash}" => list
 
 type Graph struct {
 	Hash  string
 	Data  string
 	State string
+	Owner string
 }
 
 type GraphsManager struct {
@@ -38,8 +40,15 @@ func (m *GraphsManager) Get(hash string) (string, error) {
 	return m.RedisClient.Hget(m.graphKey(hash), "data")
 }
 
-func (m *GraphsManager) Save(hash, data string) error {
-	return m.RedisClient.Hset(m.graphKey(hash), "data", data)
+func (m *GraphsManager) Save(hash, owner, data string) error {
+	key := m.graphKey(hash)
+	return m.RedisClient.Pipelined(func(pipeliner redis.Pipeliner) error {
+		pipeliner.HSet(key, "data", data)
+		pipeliner.HSet(key, "owner", owner)
+
+		_, err := pipeliner.Exec()
+		return err
+	})
 }
 
 func (m *GraphsManager) GetState(hash string) (string, error) {
@@ -59,22 +68,23 @@ func (m *GraphsManager) Scan(cursor uint64, count int64) ([]Graph, uint64, error
 	result := make([]Graph, 0, len(keys))
 	for _, key := range keys {
 		hash := strings.SplitN(strings.SplitN(key, "{", 2)[1], "}", 2)[0]
-
-		data, err := m.Get(hash)
+		mapper, err := m.RedisClient.Hgetall(m.graphKey(hash))
 		if err != nil {
 			return nil, 0, err
 		}
 
-		state, err := m.GetState(hash)
-		if err != nil {
-			return nil, 0, err
+		graph := Graph{Hash: hash}
+		for k, v := range mapper {
+			switch k {
+			case "data":
+				graph.Data = v
+			case "owner":
+				graph.Owner = v
+			case "state":
+				graph.State = v
+			}
 		}
-
-		result = append(result, Graph{
-			Hash:  hash,
-			Data:  data,
-			State: state,
-		})
+		result = append(result, graph)
 	}
 
 	return result, cur, nil

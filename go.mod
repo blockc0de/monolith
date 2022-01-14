@@ -6,8 +6,8 @@ require (
 	github.com/blockc0de/engine v0.0.0-20220105104919-b19ef54f5c5b
 	github.com/ethereum/go-ethereum v1.10.13
 	github.com/golang-jwt/jwt v3.2.1+incompatible
-	github.com/tal-tech/go-zero v1.2.4
 	github.com/tidwall/gjson v1.12.1
+	github.com/zeromicro/go-zero v1.3.0-alpha.0.20220112095739-b9b80c068bbc
 )
 
 require (

@@ -13,8 +13,8 @@ import (
 	"github.com/blockc0de/monolith/internal/types"
 	"github.com/blockc0de/monolith/internal/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tal-tech/go-zero/core/logx"
 	"github.com/tidwall/gjson"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type DeployLogic struct {
@@ -47,7 +47,7 @@ func (l *DeployLogic) Deploy(req types.DeployRequest) (resp *types.DeployRespons
 	hash := utils.GetUniqueGraphHash(address, projectId)
 
 	graphs := storage.GraphsManager{RedisClient: l.svcCtx.RedisClient}
-	if err = graphs.Save(hash, req.Bytes); err != nil {
+	if err = graphs.Save(hash, address.String(), req.Bytes); err != nil {
 		return nil, codes.NewCodeError(http.StatusInternalServerError, "internal server error")
 	}
 	graphs.ClearLogs(hash)
@@ -58,7 +58,7 @@ func (l *DeployLogic) Deploy(req types.DeployRequest) (resp *types.DeployRespons
 	}
 
 	graph.Hash = hash
-	l.svcCtx.GraphContainer.AddNewGraph(hash, graph)
+	l.svcCtx.GraphContainer.AddNewGraph(address, hash, graph)
 	logx.Infof("Graph deployed, wallet: %s, hash: %s", address.String(), hash)
 
 	return &types.DeployResponse{Hash: hash}, nil
