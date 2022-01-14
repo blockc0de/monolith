@@ -2,6 +2,7 @@
 Golang implementation of the blockc0de engine server.
 
 ## Prerequisites
+- Golang 1.17+
 - Redis server
 
 ## How to start
