@@ -27,4 +27,6 @@ vendor
 *.exe~
 *.store
 
+*.yml
+*.yaml
 monolith

@@ -5,5 +5,5 @@ Auth:
   AccessSecret: 5bffec4d-3bd7-47f7-b8a4-c11b2ed164d0
   AccessExpire: 3600
 RedisConf:
-  Host: 192.168.0.108:6379
+  Host: localhost:6379
   Type: node
