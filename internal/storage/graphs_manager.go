@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zeromicro/go-zero/core/stores/redis"
-
 	"github.com/blockc0de/monolith/internal/types"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
 // Redis Keys

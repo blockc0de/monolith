@@ -12,6 +12,7 @@ type Auth struct {
 
 type Config struct {
 	rest.RestConf
-	Auth      Auth
-	RedisConf redis.RedisConf
+	Auth             Auth
+	RedisConf        redis.RedisConf
+	TelegramEndpoint *string `json:",optional"`
 }

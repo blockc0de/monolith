@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	engineConfig "github.com/blockc0de/engine/config"
 	"github.com/blockc0de/monolith/internal/codes"
 	"github.com/blockc0de/monolith/internal/config"
 	"github.com/blockc0de/monolith/internal/handler"
@@ -24,6 +25,10 @@ func main() {
 	conf.MustLoad(*configFile, &c)
 
 	logx.MustSetup(c.Log)
+
+	if c.TelegramEndpoint != nil {
+		engineConfig.TELEGRAM_API_ENDPOINT = *c.TelegramEndpoint
+	}
 
 	ctx := svc.NewServiceContext(c)
 	server := rest.MustNewServer(c.RestConf, rest.WithCustomCors(nil, func(w http.ResponseWriter) {
