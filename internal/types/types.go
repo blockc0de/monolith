@@ -17,6 +17,24 @@ type AuthResponse struct {
 	AccessToken *string `json:"accessToken,omitempty"`
 }
 
+type GraphTemplate struct {
+	IdGraphsTemplates int64  `json:"idgraphsTemplates"`
+	Title             string `json:"title"`
+	Key               string `json:"key"`
+	Bytes             string `json:"bytes"`
+	Description       string `json:"description"`
+	CustomImg         string `json:"customImg"`
+}
+
+type GetGraphsTemplateRequest struct {
+	Id int64 `path:"id"`
+}
+
+type GetGraphsTemplateResponse struct {
+	Success  bool           `json:"success"`
+	Template *GraphTemplate `json:"template,omitempty"`
+}
+
 type LogsRequest struct {
 	Hash string `json:"hash"`
 }

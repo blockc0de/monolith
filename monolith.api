@@ -1,74 +1,95 @@
 type Log {
-    Type      string `json:"type"`
-    Message   string `json:"message"`
-    Timestamp int64  `json:"timestamp"`
+	Type      string `json:"type"`
+	Message   string `json:"message"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 type AuthRequest {
-    Address   string `json:"address"`
-    Signature string `json:"signature"`
+	Address   string `json:"address"`
+	Signature string `json:"signature"`
 }
 
 type AuthResponse {
-    Auth        bool    `json:"auth"`
-    AccessToken *string `json:"accessToken,omitempty"`
+	Auth        bool    `json:"auth"`
+	AccessToken *string `json:"accessToken,omitempty"`
+}
+
+type GraphTemplate {
+	IdGraphsTemplates int64  `json:"idgraphsTemplates"`
+	Title             string `json:"title"`
+	Key               string `json:"key"`
+	Bytes             string `json:"bytes"`
+	Description       string `json:"description"`
+	CustomImg         string `json:"customImg"`
+}
+
+type GetGraphsTemplateRequest {
+	Id int64 `path:"id"`
+}
+
+type GetGraphsTemplateResponse {
+	Success  bool           `json:"success"`
+	Template *GraphTemplate `json:"template,omitempty"`
 }
 
 type LogsRequest {
-    Hash string `json:"hash"`
+	Hash string `json:"hash"`
 }
 
 type LogsResponse {
-    Logs []Log `json:"logs"`
+	Logs []Log `json:"logs"`
 }
 
 type DeployRequest {
-    Alias string `json:"alias"`
-    Bytes string `json:"bytes"`
-    Debug bool   `json:"debug"`
-    State int    `json:"state"`
+	Alias string `json:"alias"`
+	Bytes string `json:"bytes"`
+	Debug bool   `json:"debug"`
+	State int    `json:"state"`
 }
 
 type DeployResponse {
-    Hash string `json:"hash"`
+	Hash string `json:"hash"`
 }
 
 type CompressRequest {
-    Data string `json:"data"`
+	Data string `json:"data"`
 }
 
 type CompressResponse {
-    Compressed string `json:"compressed"`
-    Hash       string `json:"hash"`
+	Compressed string `json:"compressed"`
+	Hash       string `json:"hash"`
 }
 
 type DecompressRequest {
-    Data string `json:"data"`
+	Data string `json:"data"`
 }
 
 type DecompressResponse {
-    Decompressed string `json:"decompressed"`
-    Hash         string `json:"hash"`
+	Decompressed string `json:"decompressed"`
+	Hash         string `json:"hash"`
 }
 
 service monolith-api {
-    @handler AuthHandler
-    post /wallets/auth(AuthRequest) returns (AuthResponse)
+	@handler AuthHandler
+	post /wallets/auth(AuthRequest) returns (AuthResponse)
+	
+	@handler GetGraphsTemplateHandler
+	get /graphs/template/:id(GetGraphsTemplateRequest) returns (GetGraphsTemplateResponse)
 }
 
 @server(
-    jwt: Auth
+	jwt: Auth
 )
 service monolith-api {
-    @handler LogsHandler
-    post /graphs/logs(LogsRequest) returns (LogsResponse)
-
-    @handler DeployHandler
-    post /graphs/deploy(DeployRequest) returns (DeployResponse)
-
-    @handler CompressHandler
-    post /graphs/compress(CompressRequest) returns (CompressResponse)
-
-    @handler DecompressHandler
-    post /graphs/decompress(DecompressRequest) returns (DecompressResponse)
+	@handler LogsHandler
+	post /graphs/logs(LogsRequest) returns (LogsResponse)
+	
+	@handler DeployHandler
+	post /graphs/deploy(DeployRequest) returns (DeployResponse)
+	
+	@handler CompressHandler
+	post /graphs/compress(CompressRequest) returns (CompressResponse)
+	
+	@handler DecompressHandler
+	post /graphs/decompress(DecompressRequest) returns (DecompressResponse)
 }

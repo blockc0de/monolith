@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/blockc0de/monolith/internal/svc"
-
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -16,6 +15,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/wallets/auth",
 				Handler: AuthHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/graphs/template/:id",
+				Handler: GetGraphsTemplateHandler(serverCtx),
 			},
 		},
 	)
