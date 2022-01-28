@@ -3,8 +3,9 @@ module github.com/blockc0de/monolith
 go 1.17
 
 require (
-	github.com/blockc0de/engine v0.0.0-20220105104919-b19ef54f5c5b
+	github.com/blockc0de/engine v0.1.0
 	github.com/ethereum/go-ethereum v1.10.13
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/tidwall/gjson v1.12.1
 	github.com/zeromicro/go-zero v1.3.0-alpha.0.20220112095739-b9b80c068bbc
@@ -18,7 +19,6 @@ require (
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/deckarep/golang-set v0.0.0-20180603214616-504e848d77ea // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
-	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
